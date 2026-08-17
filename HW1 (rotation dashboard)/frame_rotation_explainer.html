@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D Frame Rotations Explained</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<style>
+  :root{
+    --bg:#0b0d12; --panel:#12151c; --panel2:#171b24; --border:#242938;
+    --text:#e8eaf0; --muted:#8b93a7; --accent:#4fd1c5; --accentB:#f6ad55;
+    --red:#ff5c6c; --green:#4ade80; --blue:#5b9cff; --yellow:#fbbf24;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;overflow:hidden;}
+  #app{display:flex;width:100vw;height:100vh;}
+  #viewport{position:relative;width:70%;height:100%;}
+  #viewport canvas{display:block;}
+  #sidebar{width:30%;height:100%;background:var(--panel);border-left:1px solid var(--border);
+    overflow-y:auto;padding:18px 18px 40px;}
+  #sidebar::-webkit-scrollbar{width:8px;}
+  #sidebar::-webkit-scrollbar-thumb{background:#2a3040;border-radius:4px;}
+
+  h1{font-size:16px;margin:0 0 4px;font-weight:700;letter-spacing:.2px;}
+  .subtitle{font-size:12px;color:var(--muted);margin-bottom:18px;}
+
+  .card{background:var(--panel2);border:1px solid var(--border);border-radius:12px;
+    padding:14px 16px;margin-bottom:14px;}
+  .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);
+    margin:0 0 12px;font-weight:600;}
+
+  button{cursor:pointer;font-family:inherit;}
+  .btn{width:100%;padding:11px 14px;border-radius:9px;border:1px solid var(--border);
+    background:#1c2130;color:var(--text);font-size:13px;font-weight:600;transition:.15s;}
+  .btn:hover{background:#242a3c;border-color:#3a4258;}
+  .btn.primary{background:linear-gradient(135deg,var(--accent),#2fb8a8);color:#052; color:#06251f;border:none;}
+  .btn.primary:hover{filter:brightness(1.08);}
+
+  .toggle-row{display:flex;background:#0e1119;border:1px solid var(--border);border-radius:9px;
+    padding:3px;gap:3px;margin-bottom:4px;}
+  .toggle-opt{flex:1;text-align:center;padding:9px 6px;border-radius:7px;font-size:12px;font-weight:600;
+    color:var(--muted);border:none;background:transparent;transition:.15s;}
+  .toggle-opt.active{background:var(--accent);color:#06251f;}
+
+  label.slider-label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);
+    margin-bottom:6px;margin-top:12px;}
+  label.slider-label:first-of-type{margin-top:0;}
+  .slider-val{color:var(--text);font-weight:700;font-variant-numeric:tabular-nums;}
+  input[type=range]{width:100%;height:5px;border-radius:3px;background:#242a3c;appearance:none;outline:none;}
+  input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;border-radius:50%;
+    background:var(--accent);cursor:pointer;border:2px solid #0b0d12;}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;
+    background:var(--accent);cursor:pointer;border:2px solid #0b0d12;}
+  input[type=range].axis-x::-webkit-slider-thumb{background:var(--red);}
+  input[type=range].axis-y::-webkit-slider-thumb{background:var(--green);}
+  input[type=range].axis-z::-webkit-slider-thumb{background:var(--blue);}
+
+  .readout{display:flex;justify-content:space-between;font-size:12.5px;padding:6px 0;
+    border-bottom:1px dashed #232838;}
+  .readout:last-child{border-bottom:none;}
+  .readout .k{color:var(--muted);}
+  .readout .v{font-variant-numeric:tabular-nums;font-weight:700;}
+  .v.rx{color:var(--red);} .v.ry{color:var(--green);} .v.rz{color:var(--blue);} .v.yellow{color:var(--yellow);}
+
+  .explain{font-size:12.5px;line-height:1.55;color:#c3c9d8;}
+  .explain b{color:var(--text);}
+  .badge{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;
+    background:#20304a;color:#7db8ff;margin-bottom:8px;letter-spacing:.4px;}
+  .badge.orange{background:#3a2a1a;color:var(--accentB);}
+
+  .legend{display:flex;gap:14px;font-size:11px;color:var(--muted);margin-top:8px;flex-wrap:wrap;}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+
+  .step-btns{display:flex;gap:6px;margin-top:10px;}
+  .step-btns button{flex:1;font-size:11px;padding:8px 4px;}
+  .step-btns button.done{background:#123024;border-color:#1f5c3d;color:#4ade80;}
+  .step-btns button.active{background:#2a2410;border-color:#5c4d1f;color:var(--yellow);}
+
+  .matrix-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
+    background:#0e1119;border:1px solid var(--border);border-radius:8px;padding:10px;}
+  .mcell{text-align:center;font-variant-numeric:tabular-nums;font-size:13px;font-weight:700;
+    padding:8px 4px;background:#171b24;border-radius:5px;color:var(--text);}
+
+  #hud{position:absolute;top:14px;left:14px;background:rgba(12,14,20,.7);backdrop-filter:blur(6px);
+    border:1px solid var(--border);border-radius:10px;padding:9px 13px;font-size:11.5px;color:var(--muted);
+    pointer-events:none;}
+  #hud b{color:var(--text);}
+
+  @media (max-width:820px){
+    #app{flex-direction:column;}
+    #viewport,#sidebar{width:100%;}
+    #viewport{height:52%;}
+    #sidebar{height:48%;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="viewport">
+    <div id="hud">Drag to orbit &middot; scroll to zoom &middot; right-drag to pan<br><b id="hudStatus">Body frame misaligned</b></div>
+    <div id="loadError" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;
+      align-items:center;justify-content:center;padding:40px;text-align:center;
+      color:#ff8a8a;font-size:14px;line-height:1.6;background:#0b0d12;">
+      ⚠️ Couldn't load Three.js from the CDN.<br>This usually means no internet access or the CDN is blocked.<br>
+      Check your network connection, or open the browser console (F12) for the exact error.
+    </div>
+  </div>
+  <div id="sidebar">
+    <h1>Frame Rotations, Visually</h1>
+    <div class="subtitle">How to spin a tilted object back to "home" — two different ways.</div>
+
+    <div class="card">
+      <h2>Controls</h2>
+      <button class="btn primary" id="randomizeBtn">🎲 Randomize Body Orientation</button>
+      <div style="height:10px"></div>
+      <div class="toggle-row">
+        <button class="toggle-opt active" id="modeABtn">1-Rotation (Euler Axis)</button>
+        <button class="toggle-opt" id="modeBBtn">3-Rotations (Yaw-Pitch-Roll)</button>
+      </div>
+    </div>
+
+    <!-- MODE A -->
+    <div class="card" id="modeAPanel">
+      <h2>Alignment Progress</h2>
+      <label class="slider-label"><span>Rotation θ toward home</span><span class="slider-val" id="progressVal">0%</span></label>
+      <input type="range" id="progressSlider" min="0" max="100" value="0" step="0.5">
+
+      <div style="margin-top:14px;">
+        <div class="readout"><span class="k">Euler Axis Ux</span><span class="v rx" id="axX">–</span></div>
+        <div class="readout"><span class="k">Euler Axis Uy</span><span class="v ry" id="axY">–</span></div>
+        <div class="readout"><span class="k">Euler Axis Uz</span><span class="v rz" id="axZ">–</span></div>
+        <div class="readout"><span class="k">Total angle required</span><span class="v yellow" id="axAngle">–</span></div>
+        <div class="readout"><span class="k">Angle remaining</span><span class="v" id="axRemaining">–</span></div>
+      </div>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--yellow)"></span>Euler axis vector</span>
+      </div>
+    </div>
+
+    <!-- MODE B -->
+    <div class="card" id="modeBPanel" style="display:none;">
+      <h2>Yaw &middot; Pitch &middot; Roll</h2>
+      <label class="slider-label"><span>Yaw (about Z)</span><span class="slider-val" id="yawVal">0°</span></label>
+      <input type="range" class="axis-z" id="yawSlider" min="-180" max="180" value="0" step="1">
+      <label class="slider-label"><span>Pitch (about Y)</span><span class="slider-val" id="pitchVal">0°</span></label>
+      <input type="range" class="axis-y" id="pitchSlider" min="-180" max="180" value="0" step="1">
+      <label class="slider-label"><span>Roll (about X)</span><span class="slider-val" id="rollVal">0°</span></label>
+      <input type="range" class="axis-x" id="rollSlider" min="-180" max="180" value="0" step="1">
+
+      <div class="step-btns">
+        <button id="stepYaw">1. Undo Yaw</button>
+        <button id="stepPitch">2. Undo Pitch</button>
+        <button id="stepRoll">3. Undo Roll</button>
+      </div>
+      <div style="height:8px"></div>
+      <button class="btn" id="resetStepsBtn" style="font-size:11px;padding:7px;">Reset step sequence to current tilt</button>
+    </div>
+
+    <div class="card">
+      <h2>Live Rotation Matrix (Body → Ground)</h2>
+      <div class="matrix-grid" id="matrixGrid">
+        <span class="mcell" id="m00">1.000</span><span class="mcell" id="m01">0.000</span><span class="mcell" id="m02">0.000</span>
+        <span class="mcell" id="m10">0.000</span><span class="mcell" id="m11">1.000</span><span class="mcell" id="m12">0.000</span>
+        <span class="mcell" id="m20">0.000</span><span class="mcell" id="m21">0.000</span><span class="mcell" id="m22">1.000</span>
+      </div>
+      <div class="explain" style="margin-top:10px;">
+        This 3×3 matrix R rotates any vector expressed in the <b>Body Frame</b> into the <b>Ground Frame</b>: v_ground = R · v_body. It updates live as you move any slider.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Current Tilt — Single-Axis View</h2>
+      <div class="explain" style="margin-bottom:8px;">
+        No matter which mode you're in, the body's current tilt is always equivalent to <b>one</b> rotation around <b style="color:#c084fc">this axis</b>. It's drawn as a purple line through the origin in the viewport.
+      </div>
+      <div class="readout"><span class="k">Axis Vx</span><span class="v" id="paX" style="color:#c084fc">–</span></div>
+      <div class="readout"><span class="k">Axis Vy</span><span class="v" id="paY" style="color:#c084fc">–</span></div>
+      <div class="readout"><span class="k">Axis Vz</span><span class="v" id="paZ" style="color:#c084fc">–</span></div>
+      <div class="readout"><span class="k">Angle from home</span><span class="v" id="paAngle" style="color:#c084fc">–</span></div>
+    </div>
+
+    <!-- EXPLANATION -->
+    <div class="card" id="explainA">
+      <span class="badge">Plain English</span>
+      <div class="explain">
+        Think of this like a <b>globe</b>. No matter how you tilt it, there is always exactly
+        <b>one straight line through the center</b> — the <b style="color:var(--yellow)">Euler axis</b> —
+        that you can spin the whole globe around, in a <b>single move</b>, to bring it back to any target orientation.
+        Drag the slider and watch the body frame swing home around that one yellow line.
+      </div>
+    </div>
+    <div class="card" id="explainB" style="display:none;">
+      <span class="badge orange">Plain English</span>
+      <div class="explain">
+        Think of an <b>airplane</b>: <b style="color:var(--blue)">Yaw</b> steers left/right (nose swings around the vertical axis),
+        <b style="color:var(--green)">Pitch</b> tilts the nose up/down, and <b style="color:var(--red)">Roll</b> tilts the wings side to side.
+        Undoing these <b>three rotations in order</b> — yaw, then pitch, then roll — walks the plane back to level, home orientation.
+        Order matters: doing them in a different sequence lands you somewhere else!
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Frame Legend</h2>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--red)"></span>X axis</span>
+        <span><span class="dot" style="background:var(--green)"></span>Y axis</span>
+        <span><span class="dot" style="background:var(--blue)"></span>Z axis</span>
+      </div>
+      <div class="explain" style="margin-top:10px;">
+        The <b>solid, bright axes</b> at the origin are the fixed <b>Ground Frame</b>.
+        The <b>dashed, offset axes</b> on the little shuttle are the movable <b>Body Frame</b> — your goal is to rotate it until it matches the ground frame.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ============== SETUP ============== */
+const viewport = document.getElementById('viewport');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b0d12);
+scene.fog = new THREE.Fog(0x0b0d12, 10, 40);
+
+const camera = new THREE.PerspectiveCamera(45, viewport.clientWidth/viewport.clientHeight, 0.1, 1000);
+camera.position.set(6, 5, 8);
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+viewport.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.target.set(0,0.5,0);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const dl = new THREE.DirectionalLight(0xffffff, 0.9);
+dl.position.set(5,8,6);
+scene.add(dl);
+const dl2 = new THREE.DirectionalLight(0x88aaff, 0.3);
+dl2.position.set(-5,-3,-4);
+scene.add(dl2);
+
+/* Grid */
+const grid = new THREE.GridHelper(14, 14, 0x2a3245, 0x1a2030);
+scene.add(grid);
+
+/* ============== AXES HELPERS ============== */
+function makeAxes(length, dashed, opacity){
+  const group = new THREE.Group();
+  const dirs = [
+    {v:new THREE.Vector3(1,0,0), c:0xff5c6c},
+    {v:new THREE.Vector3(0,1,0), c:0x4ade80},
+    {v:new THREE.Vector3(0,0,1), c:0x5b9cff},
+  ];
+  dirs.forEach(d=>{
+    const points = [new THREE.Vector3(0,0,0), d.v.clone().multiplyScalar(length)];
+    const geo = new THREE.BufferGeometry().setFromPoints(points);
+    let mat;
+    if(dashed){
+      mat = new THREE.LineDashedMaterial({color:d.c, dashSize:0.12, gapSize:0.09, linewidth:1, transparent:true, opacity:opacity||1});
+    } else {
+      mat = new THREE.LineBasicMaterial({color:d.c, linewidth:2, transparent:true, opacity:opacity||1});
+    }
+    const line = new THREE.Line(geo, mat);
+    if(dashed) line.computeLineDistances();
+    group.add(line);
+
+    // arrow head cone
+    const cone = new THREE.Mesh(
+      new THREE.ConeGeometry(length*0.035, length*0.11, 10),
+      new THREE.MeshStandardMaterial({color:d.c, transparent:true, opacity:opacity||1})
+    );
+    cone.position.copy(d.v.clone().multiplyScalar(length));
+    cone.lookAt(d.v.clone().multiplyScalar(length*2));
+    cone.rotateX(Math.PI/2);
+    group.add(cone);
+  });
+  return group;
+}
+
+// Ground frame (fixed, solid, bright)
+const groundAxes = makeAxes(3.2, false, 1);
+scene.add(groundAxes);
+
+/* ============== BODY FRAME ============== */
+const bodyFrame = new THREE.Group();
+scene.add(bodyFrame);
+
+// Body axes (dashed, offset)
+const bodyAxes = makeAxes(2.1, true, 0.95);
+bodyFrame.add(bodyAxes);
+
+// Stylized shuttle: distinct front/top so orientation is obvious
+const shuttle = new THREE.Group();
+const bodyMat = new THREE.MeshStandardMaterial({color:0xd8dce6, metalness:0.3, roughness:0.45});
+const noseMat = new THREE.MeshStandardMaterial({color:0xf6ad55, metalness:0.2, roughness:0.4});
+const finMat = new THREE.MeshStandardMaterial({color:0x4fd1c5, metalness:0.2, roughness:0.4});
+
+// fuselage (along +X = "front")
+const fuselage = new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.22,1.6,16), bodyMat);
+fuselage.rotation.z = Math.PI/2;
+shuttle.add(fuselage);
+
+// nose cone points toward +X
+const nose = new THREE.Mesh(new THREE.ConeGeometry(0.22,0.55,16), noseMat);
+nose.rotation.z = -Math.PI/2;
+nose.position.x = 1.075;
+shuttle.add(nose);
+
+// wings (in XY plane, spanning Y)
+const wingGeo = new THREE.BoxGeometry(0.5, 1.7, 0.06);
+const wing = new THREE.Mesh(wingGeo, bodyMat);
+wing.position.set(-0.1,0,0);
+shuttle.add(wing);
+
+// vertical fin points toward +Z ("top")
+const finGeo = new THREE.BoxGeometry(0.4,0.06,0.6);
+const fin = new THREE.Mesh(finGeo, finMat);
+fin.position.set(-0.5,0,0.35);
+shuttle.add(fin);
+
+// small canopy on top (+Z) near nose to mark "top" clearly
+const canopy = new THREE.Mesh(new THREE.SphereGeometry(0.16,16,12,0,Math.PI*2,0,Math.PI/2), new THREE.MeshStandardMaterial({color:0x7db8ff, transparent:true, opacity:0.85, metalness:0.1, roughness:0.2}));
+canopy.position.set(0.35,0,0.22);
+canopy.rotation.x = Math.PI/2 * 0; // keep hemisphere up
+shuttle.add(canopy);
+
+bodyFrame.add(shuttle);
+
+/* ============== EULER AXIS VISUAL (Mode A) ============== */
+const axisGroup = new THREE.Group();
+scene.add(axisGroup);
+
+const axisLineMat = new THREE.LineBasicMaterial({color:0xfbbf24, linewidth:2});
+const axisLineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-3,0,0), new THREE.Vector3(3,0,0)]);
+const axisLine = new THREE.Line(axisLineGeo, axisLineMat);
+axisGroup.add(axisLine);
+
+// small spheres at both ends as arrow-ish markers
+const axisTip = new THREE.Mesh(new THREE.ConeGeometry(0.07,0.22,10), new THREE.MeshStandardMaterial({color:0xfbbf24}));
+axisGroup.add(axisTip);
+
+/* ============== PERSISTENT CURRENT-TILT AXIS (always visible, both modes) ============== */
+const currentAxisGroup = new THREE.Group();
+scene.add(currentAxisGroup);
+const currentAxisMat = new THREE.LineBasicMaterial({color:0xc084fc, transparent:true, opacity:0.85});
+const currentAxisGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-2.6,0,0), new THREE.Vector3(2.6,0,0)]);
+const currentAxisLine = new THREE.Line(currentAxisGeo, currentAxisMat);
+currentAxisGroup.add(currentAxisLine);
+const currentAxisTipA = new THREE.Mesh(new THREE.ConeGeometry(0.06,0.18,10), new THREE.MeshStandardMaterial({color:0xc084fc}));
+const currentAxisTipB = new THREE.Mesh(new THREE.ConeGeometry(0.06,0.18,10), new THREE.MeshStandardMaterial({color:0xc084fc}));
+currentAxisGroup.add(currentAxisTipA, currentAxisTipB);
+
+function computeAxisAngleFromQuat(q){
+  // axis-angle such that rotating identity by 'angle' about 'axis' yields q
+  let angle = 2*Math.acos(THREE.MathUtils.clamp(q.w, -1, 1));
+  const sinHalf = Math.sqrt(Math.max(0, 1 - q.w*q.w));
+  let axis;
+  if(sinHalf < 1e-6){
+    axis = new THREE.Vector3(1,0,0);
+    angle = 0;
+  } else {
+    axis = new THREE.Vector3(q.x, q.y, q.z).multiplyScalar(1/sinHalf);
+  }
+  return {axis, angle};
+}
+
+function updateMatrixAndAxis(q){
+  // --- rotation matrix readout ---
+  const m = new THREE.Matrix4().makeRotationFromQuaternion(q);
+  const e = m.elements; // column-major
+  const cellIds = [
+    ['m00','m01','m02'],
+    ['m10','m11','m12'],
+    ['m20','m21','m22']
+  ];
+  for(let row=0; row<3; row++){
+    for(let col=0; col<3; col++){
+      const val = e[col*4 + row]; // convert column-major to [row][col]
+      document.getElementById(cellIds[row][col]).textContent = val.toFixed(3);
+    }
+  }
+
+  // --- persistent single-axis readout + 3D vector ---
+  const {axis, angle} = computeAxisAngleFromQuat(q);
+  document.getElementById('paX').textContent = angle > 1e-4 ? axis.x.toFixed(3) : '—';
+  document.getElementById('paY').textContent = angle > 1e-4 ? axis.y.toFixed(3) : '—';
+  document.getElementById('paZ').textContent = angle > 1e-4 ? axis.z.toFixed(3) : '—';
+  document.getElementById('paAngle').textContent = THREE.MathUtils.radToDeg(angle).toFixed(1) + '°';
+
+  currentAxisGroup.visible = angle > 1e-4;
+  if(angle > 1e-4){
+    const a = axis.clone().normalize();
+    currentAxisGeo.dispose();
+    currentAxisLine.geometry = new THREE.BufferGeometry().setFromPoints([
+      a.clone().multiplyScalar(-2.6), a.clone().multiplyScalar(2.6)
+    ]);
+    currentAxisTipA.position.copy(a.clone().multiplyScalar(2.6));
+    currentAxisTipA.lookAt(a.clone().multiplyScalar(5.2));
+    currentAxisTipA.rotateX(Math.PI/2);
+    currentAxisTipB.position.copy(a.clone().multiplyScalar(-2.6));
+    currentAxisTipB.lookAt(a.clone().multiplyScalar(-5.2));
+    currentAxisTipB.rotateX(Math.PI/2);
+  }
+}
+
+// curved arc showing rotation direction around axis
+const arcCurveGroup = new THREE.Group();
+scene.add(arcCurveGroup);
+let arcLine = null;
+function updateArc(axisVec, angleTotal, angleDone, radius){
+  arcCurveGroup.clear();
+  if(Math.abs(angleTotal) < 1e-4) return;
+  // build orthonormal basis around axis
+  const axis = axisVec.clone().normalize();
+  let ref = new THREE.Vector3(0,0,1);
+  if(Math.abs(axis.dot(ref)) > 0.9) ref = new THREE.Vector3(1,0,0);
+  const u = new THREE.Vector3().crossVectors(ref, axis).normalize();
+  const v = new THREE.Vector3().crossVectors(axis, u).normalize();
+  const pts = [];
+  const segs = 48;
+  const sweep = angleTotal; // full angle
+  for(let i=0;i<=segs;i++){
+    const t = (i/segs) * sweep;
+    const p = u.clone().multiplyScalar(Math.cos(t)*radius).add(v.clone().multiplyScalar(Math.sin(t)*radius));
+    pts.push(p);
+  }
+  const geo = new THREE.BufferGeometry().setFromPoints(pts);
+  const mat = new THREE.LineBasicMaterial({color:0xfbbf24, transparent:true, opacity:0.55});
+  const line = new THREE.Line(geo, mat);
+  arcCurveGroup.add(line);
+
+  // progress arc (brighter, up to angleDone)
+  const pts2 = [];
+  const doneT = Math.min(angleDone, sweep);
+  const segs2 = Math.max(2, Math.floor(segs * (doneT/ (sweep||1))));
+  for(let i=0;i<=segs2;i++){
+    const t = (i/segs2) * doneT;
+    const p = u.clone().multiplyScalar(Math.cos(t)*radius).add(v.clone().multiplyScalar(Math.sin(t)*radius));
+    pts2.push(p);
+  }
+  if(pts2.length>1){
+    const geo2 = new THREE.BufferGeometry().setFromPoints(pts2);
+    const mat2 = new THREE.LineBasicMaterial({color:0xfff2c9, linewidth:2});
+    arcCurveGroup.add(new THREE.Line(geo2, mat2));
+  }
+}
+
+/* ============== STATE ============== */
+let mode = 'A'; // 'A' or 'B'
+let targetQuat = new THREE.Quaternion(); // identity (ground)
+let startQuat = new THREE.Quaternion();  // orientation at time of randomize / mode switch
+let currentEulerAxis = new THREE.Vector3(1,0,0);
+let currentEulerAngle = 0; // radians, total angle needed at time of randomize
+
+// Mode B state: yaw(Z), pitch(Y), roll(X) applied as R = Rz(yaw)*Ry(pitch)*Rx(roll)
+let ypr = {yaw:0, pitch:0, roll:0}; // radians
+let stepState = {yawDone:false, pitchDone:false, rollDone:false};
+
+function randomOrientation(){
+  // random unit quaternion
+  const u1 = Math.random(), u2 = Math.random(), u3 = Math.random();
+  const q = new THREE.Quaternion(
+    Math.sqrt(1-u1)*Math.sin(2*Math.PI*u2),
+    Math.sqrt(1-u1)*Math.cos(2*Math.PI*u2),
+    Math.sqrt(u1)*Math.sin(2*Math.PI*u3),
+    Math.sqrt(u1)*Math.cos(2*Math.PI*u3)
+  );
+  return q;
+}
+
+function setBodyFromQuat(q){
+  bodyFrame.quaternion.copy(q);
+}
+
+function computeEulerAxisAngle(q){
+  // q rotates body FROM identity TO current tilt.
+  // We need axis-angle that takes current tilt back to identity: inverse of q.
+  const qInv = q.clone().invert();
+  let angle = 2*Math.acos(THREE.MathUtils.clamp(qInv.w, -1, 1));
+  let sinHalf = Math.sqrt(1 - qInv.w*qInv.w);
+  let axis;
+  if(sinHalf < 1e-6){
+    axis = new THREE.Vector3(1,0,0);
+    angle = 0;
+  } else {
+    axis = new THREE.Vector3(qInv.x, qInv.y, qInv.z).multiplyScalar(1/sinHalf);
+  }
+  return {axis, angle};
+}
+
+function initFromRandom(){
+  const q = randomOrientation();
+  startQuat = q.clone();
+  setBodyFromQuat(q);
+  const res = computeEulerAxisAngle(q);
+  currentEulerAxis = res.axis;
+  currentEulerAngle = res.angle;
+  document.getElementById('progressSlider').value = 0;
+  updateProgressReadouts(0);
+
+  // decompose into yaw/pitch/roll (ZYX) for mode B starting sliders
+  const euler = new THREE.Euler().setFromQuaternion(q, 'ZYX');
+  ypr.yaw = euler.z; ypr.pitch = euler.y; ypr.roll = euler.x;
+  yawSlider.value = THREE.MathUtils.radToDeg(ypr.yaw).toFixed(0);
+  pitchSlider.value = THREE.MathUtils.radToDeg(ypr.pitch).toFixed(0);
+  rollSlider.value = THREE.MathUtils.radToDeg(ypr.roll).toFixed(0);
+  stepState = {yawDone:false, pitchDone:false, rollDone:false};
+  updateStepButtons();
+  applyYPR();
+  updateHud();
+}
+
+/* ============== MODE A LOGIC ============== */
+const progressSlider = document.getElementById('progressSlider');
+const progressVal = document.getElementById('progressVal');
+
+function updateProgressReadouts(t){
+  progressVal.textContent = Math.round(t*100) + '%';
+  document.getElementById('axX').textContent = currentEulerAxis.x.toFixed(3);
+  document.getElementById('axY').textContent = currentEulerAxis.y.toFixed(3);
+  document.getElementById('axZ').textContent = currentEulerAxis.z.toFixed(3);
+  const totalDeg = THREE.MathUtils.radToDeg(currentEulerAngle);
+  document.getElementById('axAngle').textContent = totalDeg.toFixed(1) + '°';
+  document.getElementById('axRemaining').textContent = (totalDeg*(1-t)).toFixed(1) + '°';
+}
+
+function applyModeA(t){
+  // interpolate from startQuat back to identity using SLERP, driven by axis-angle Rodrigues concept
+  const q = new THREE.Quaternion().slerpQuaternions(startQuat, new THREE.Quaternion(), t);
+  setBodyFromQuat(q);
+
+  // position axis visual through origin along currentEulerAxis
+  const axis = currentEulerAxis.clone().normalize();
+  axisLine.geometry.dispose();
+  axisLine.geometry = new THREE.BufferGeometry().setFromPoints([
+    axis.clone().multiplyScalar(-3), axis.clone().multiplyScalar(3)
+  ]);
+  axisTip.position.copy(axis.clone().multiplyScalar(3));
+  axisTip.lookAt(axis.clone().multiplyScalar(6));
+  axisTip.rotateX(Math.PI/2);
+
+  const angleRemaining = currentEulerAngle*(1-t);
+  updateArc(axis, currentEulerAngle, angleRemaining>0? (currentEulerAngle - angleRemaining): currentEulerAngle, 1.6);
+
+  updateProgressReadouts(t);
+  updateHud();
+}
+
+progressSlider.addEventListener('input', ()=>{
+  applyModeA(progressSlider.value/100);
+});
+
+/* ============== MODE B LOGIC ============== */
+const yawSlider = document.getElementById('yawSlider');
+const pitchSlider = document.getElementById('pitchSlider');
+const rollSlider = document.getElementById('rollSlider');
+const yawVal = document.getElementById('yawVal');
+const pitchVal = document.getElementById('pitchVal');
+const rollVal = document.getElementById('rollVal');
+
+function applyYPR(){
+  const yaw = THREE.MathUtils.degToRad(parseFloat(yawSlider.value));
+  const pitch = THREE.MathUtils.degToRad(parseFloat(pitchSlider.value));
+  const roll = THREE.MathUtils.degToRad(parseFloat(rollSlider.value));
+  ypr = {yaw, pitch, roll};
+  const euler = new THREE.Euler(roll, pitch, yaw, 'ZYX'); // three.js order string applies X,Y,Z rotations in reverse composition -> gives R = Rz*Ry*Rx
+  const q = new THREE.Quaternion().setFromEuler(euler);
+  setBodyFromQuat(q);
+  yawVal.textContent = Math.round(THREE.MathUtils.radToDeg(yaw)) + '°';
+  pitchVal.textContent = Math.round(THREE.MathUtils.radToDeg(pitch)) + '°';
+  rollVal.textContent = Math.round(THREE.MathUtils.radToDeg(roll)) + '°';
+  updateHud();
+}
+
+[yawSlider, pitchSlider, rollSlider].forEach(s=>{
+  s.addEventListener('input', ()=>{ stepState={yawDone:false,pitchDone:false,rollDone:false}; updateStepButtons(); applyYPR(); });
+});
+
+function updateStepButtons(){
+  document.getElementById('stepYaw').className = stepState.yawDone ? 'done' : '';
+  document.getElementById('stepPitch').className = stepState.pitchDone ? 'done' : '';
+  document.getElementById('stepRoll').className = stepState.rollDone ? 'done' : '';
+}
+
+document.getElementById('stepYaw').addEventListener('click', ()=>{
+  animateSliderTo(yawSlider, 0, ()=>{ stepState.yawDone = true; updateStepButtons(); });
+});
+document.getElementById('stepPitch').addEventListener('click', ()=>{
+  animateSliderTo(pitchSlider, 0, ()=>{ stepState.pitchDone = true; updateStepButtons(); });
+});
+document.getElementById('stepRoll').addEventListener('click', ()=>{
+  animateSliderTo(rollSlider, 0, ()=>{ stepState.rollDone = true; updateStepButtons(); });
+});
+document.getElementById('resetStepsBtn').addEventListener('click', ()=>{
+  stepState = {yawDone:false, pitchDone:false, rollDone:false};
+  updateStepButtons();
+});
+
+function animateSliderTo(slider, target, cb){
+  const start = parseFloat(slider.value);
+  const duration = 600;
+  const t0 = performance.now();
+  function step(now){
+    const t = Math.min(1, (now-t0)/duration);
+    const eased = 1 - Math.pow(1-t,3);
+    slider.value = (start + (target-start)*eased).toFixed(1);
+    applyYPR();
+    if(t<1) requestAnimationFrame(step); else if(cb) cb();
+  }
+  requestAnimationFrame(step);
+}
+
+/* ============== MODE TOGGLE ============== */
+const modeAPanel = document.getElementById('modeAPanel');
+const modeBPanel = document.getElementById('modeBPanel');
+const explainA = document.getElementById('explainA');
+const explainB = document.getElementById('explainB');
+const modeABtn = document.getElementById('modeABtn');
+const modeBBtn = document.getElementById('modeBBtn');
+
+function setMode(m){
+  mode = m;
+  const isA = m==='A';
+  modeAPanel.style.display = isA ? '' : 'none';
+  modeBPanel.style.display = isA ? 'none' : '';
+  explainA.style.display = isA ? '' : 'none';
+  explainB.style.display = isA ? 'none' : '';
+  modeABtn.classList.toggle('active', isA);
+  modeBBtn.classList.toggle('active', !isA);
+  axisGroup.visible = isA;
+  arcCurveGroup.visible = isA;
+
+  if(isA){
+    // recompute axis-angle from current body orientation
+    const q = bodyFrame.quaternion.clone();
+    startQuat = q.clone();
+    const res = computeEulerAxisAngle(q);
+    currentEulerAxis = res.axis;
+    currentEulerAngle = res.angle;
+    progressSlider.value = 0;
+    applyModeA(0);
+  } else {
+    const euler = new THREE.Euler().setFromQuaternion(bodyFrame.quaternion, 'ZYX');
+    ypr.yaw = euler.z; ypr.pitch = euler.y; ypr.roll = euler.x;
+    yawSlider.value = THREE.MathUtils.radToDeg(ypr.yaw).toFixed(0);
+    pitchSlider.value = THREE.MathUtils.radToDeg(ypr.pitch).toFixed(0);
+    rollSlider.value = THREE.MathUtils.radToDeg(ypr.roll).toFixed(0);
+    stepState = {yawDone:false, pitchDone:false, rollDone:false};
+    updateStepButtons();
+    applyYPR();
+  }
+  updateHud();
+}
+modeABtn.addEventListener('click', ()=>setMode('A'));
+modeBBtn.addEventListener('click', ()=>setMode('B'));
+
+document.getElementById('randomizeBtn').addEventListener('click', ()=>{
+  initFromRandom();
+  if(mode==='A'){ applyModeA(0); } else { setMode('B'); }
+});
+
+/* ============== HUD ============== */
+function updateHud(){
+  const q = bodyFrame.quaternion;
+  updateMatrixAndAxis(q);
+  const angleToGround = 2*Math.acos(THREE.MathUtils.clamp(Math.abs(q.w),-1,1));
+  const deg = THREE.MathUtils.radToDeg(angleToGround);
+  const status = document.getElementById('hudStatus');
+  if(deg < 0.5){
+    status.textContent = '✅ Body frame aligned with ground frame';
+  } else {
+    status.textContent = `Body frame misaligned — ${deg.toFixed(1)}° from home`;
+  }
+}
+
+/* ============== INIT ============== */
+initFromRandom();
+setMode('A');
+
+/* ============== RESIZE ============== */
+window.addEventListener('resize', ()=>{
+  camera.aspect = viewport.clientWidth/viewport.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+});
+
+/* ============== RENDER LOOP ============== */
+function animate(){
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>
