@@ -1,0 +1,61 @@
+<mujoco model="turtlebot3_waffle_pi">
+  <compiler angle="radian" meshdir="." balanceinertia="true"/>
+  <option timestep="0.002" gravity="0 0 -9.81"/>
+
+  <asset>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+    <mesh name="base_mesh" file="waffle_pi_base.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="wheel_mesh" file="left_tire.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="lds_mesh" file="lds.stl" scale="0.001 0.001 0.001"/>
+  </asset>
+
+  <default>
+    <joint armature="0.01" damping="0.1"/>
+    <geom friction="1.0 0.005 0.0001"/>
+  </default>
+
+  <worldbody>
+    <light pos="0 0 3" dir="0 0 -1" directional="true"/>
+    <geom name="floor" type="plane" size="10 10 0.1" material="groundplane"/>
+
+    <!-- FIXED WORLD FRAME AT ORIGIN -->
+    <site name="world_frame" pos="0 0 0.01" size="0.01" rgba="1 0 0 1"/>
+
+    <!-- Robot Base Link -->
+    <body name="base_link" pos="0 0 0.033">
+      <freejoint/>
+
+      <!-- MOVING BODY FRAME -->
+      <site name="body_frame" pos="-0.064 0 0.16" size="0.01" rgba="0 1 0 1"/>
+
+      <geom type="mesh" mesh="base_mesh" pos="-0.064 0 0" rgba="0.2 0.2 0.2 1"/>
+      <geom size="0.133 0.133 0.047" pos="-0.064 0 0.057" type="box" group="3"/>
+
+      <geom size="0.01" pos="-0.177 -0.064 -0.023" type="sphere" rgba="0.1 0.1 0.1 1" friction="0.0005 0.0005 0.0001"/>
+      <geom size="0.01" pos="-0.177 0.064 -0.023" type="sphere" rgba="0.1 0.1 0.1 1" friction="0.0005 0.0005 0.0001"/>
+
+      <geom type="mesh" mesh="lds_mesh" pos="-0.064 0 0.12" rgba="0.3 0.3 0.3 1"/>
+
+      <body name="wheel_left_link" pos="0 0.144 0">
+        <joint name="wheel_left_joint" type="hinge" axis="0 1 0"/>
+        <geom type="mesh" mesh="wheel_mesh" pos="0 0 0" euler="0 1.5708 0" rgba="0.1 0.1 0.1 1"/>
+      </body>
+
+      <body name="wheel_right_link" pos="0 -0.144 0">
+        <joint name="wheel_right_joint" type="hinge" axis="0 1 0"/>
+        <geom type="mesh" mesh="wheel_mesh" pos="0 0 0" euler="0 1.5708 0" rgba="0.1 0.1 0.1 1"/>
+      </body>
+    </body>
+  </worldbody>
+
+  <contact>
+    <exclude body1="base_link" body2="wheel_left_link"/>
+    <exclude body1="base_link" body2="wheel_right_link"/>
+  </contact>
+
+  <actuator>
+    <velocity name="left_wheel_motor" joint="wheel_left_joint" kv="5" ctrlrange="-150 150"/>
+    <velocity name="right_wheel_motor" joint="wheel_right_joint" kv="5" ctrlrange="-150 150"/>
+  </actuator>
+</mujoco>
