@@ -1,37 +1,4 @@
 #!/usr/bin/env python3
-"""
-heal_dh_fk.py  -  Forward kinematics (DH) of the Addverb Heal 6-DOF arm in MuJoCo
-==================================================================================
-
-* A Tk window with one slider per joint (theta_1 ... theta_6, in degrees).
-* The DH forward kinematics (standard / Denavit-Hartenberg convention) computes the
-  end-effector pose for the slider values.
-* The MuJoCo robot is driven to those joint values, so its end effector goes to
-  the DH-computed point.  A yellow sphere + RGB axes are drawn at the pose
-  predicted by DH, and the window shows DH-vs-MuJoCo position error live.
-
-Run
----
-    python heal_dh_fk.py                 # GUI + MuJoCo viewer
-    python heal_dh_fk.py --check         # headless self-test (no window)
-    python heal_dh_fk.py --xml "/path/to/robot_descriptions/single_arm_heal_effort_actuation_rs_mj_2.xml"
-
-Needs:  pip install mujoco numpy      and      sudo apt install python3-tk
-(On macOS the viewer has to be started with `mjpython` instead of `python`.)
-
-Where do the DH parameters come from?
-The XML has no DH table, so it was derived from the joint axes in the XML
-(zero configuration): z_{i-1} = axis of joint i, x_i = common normal, and the
-last row places the frame exactly on the XML's `end_effector` body.
-Two things in the XML that show up in the table:
-  * joint_2 and joint_6 have axis (0 0 -1); the DH z-axes are chosen along the
-    real rotation axes, so a positive slider value always rotates the same way
-    as in MuJoCo.
-  * the XML uses 1.57 rad where an ideal robot would use pi/2, so a few table
-    entries are written as 1.57 or (pi/2 - 1.57).  The DH-vs-MuJoCo position
-    error stays below ~0.2 mm (shown live in the window).
-"""
-
 import argparse
 import sys
 import time
@@ -42,9 +9,7 @@ import numpy as np
 import mujoco
 import mujoco.viewer
 
-# --------------------------------------------------------------------------- #
-#  1. Where is the XML?                                                        #
-# --------------------------------------------------------------------------- #
+
 XML_REL = Path("robot_descriptions/single_arm_heal_effort_actuation_rs_mj_2.xml")
 
 _HERE = Path(__file__).resolve().parent
@@ -71,13 +36,7 @@ def find_xml(cli_path=None) -> Path:
              "\nPass it explicitly with  --xml PATH")
 
 
-# --------------------------------------------------------------------------- #
-#  2. DH parameters  (standard DH)                                             #
-#     T(i-1 -> i) = Rz(theta_i) * Tz(d_i) * Tx(a_i) * Rx(alpha_i)              #
-#     theta_i = q_i + theta_offset_i                                           #
-# --------------------------------------------------------------------------- #
 PI = np.pi
-#          theta_offset_i [rad]   d_i [m]    a_i [m]   alpha_i [rad]
 DH_TABLE = [
     (0.0,            0.3208,    0.0,    -PI / 2),   # joint 1  (turret)
     (-PI / 2,        0.0,       0.3,     PI),       # joint 2  (shoulder)
@@ -86,7 +45,7 @@ DH_TABLE = [
     (1.57,           0.0,       0.0,     PI / 2),   # joint 5  (wrist 2)
     (PI,            -0.1227,    0.0,     PI),       # joint 6  (wrist 3) -> ends on the 'end_effector' body frame
 ]
-TOOL_OFFSET = 0.0            # extra tool length along the end-effector z axis [m]
+TOOL_OFFSET = 0.0            #
 
 HOME_POSE = np.zeros(6)
 NJ = len(DH_TABLE)
