@@ -16,7 +16,7 @@ _HERE = Path(__file__).resolve().parent
 ROOT_CANDIDATES = [
     _HERE.parent,                      # script lives in ITR_mujoco_fk_lab/scripts/
     _HERE,                             # script lives in ITR_mujoco_fk_lab/
-    Path("/home/parshva/ITR/Challange_3 (Forward Kinematics)/ITR_mujoco_fk_lab"),
+    Path("/home/parshva/ITR/Lab2/Challange_3 (Forward Kinematics)/ITR_mujoco_fk_lab"),
     Path.home() / "ITR/Challange_3 (Forward Kinematics)/ITR_mujoco_fk_lab",
 ]
 
