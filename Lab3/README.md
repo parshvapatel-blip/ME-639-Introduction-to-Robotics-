@@ -10,46 +10,128 @@ behind one interface – 6 entry scripts sharing one pipeline:
 | Closed-loop **DLS** + null-space joint centring | `scripts/heal/ik_dls/run_dls_pick_place.py` | `scripts/franka/ik_dls/run_dls_pick_place.py` |
 | **QP-IK** with joint-position + velocity limits | `scripts/heal/ik_qp/run_qp_pick_place.py` | `scripts/franka/ik_qp/run_qp_pick_place.py` |
 
-## 1. Install
+## 1. Set up the environment
+
+Tested on Ubuntu 22.04/24.04 with Python 3.10–3.12 and MuJoCo 3.x.
 
 ```bash
-pip install mujoco mink "qpsolvers[daqp]" numpy pandas matplotlib tabulate imageio imageio-ffmpeg opencv-python
+# get the code
+git clone https://github.com/parshvapatel-blip/ME-639-Introduction-to-Robotics-.git
+cd ME-639-Introduction-to-Robotics-/Lab3          # every command below is run from this folder
+
+# create an isolated Python environment (not committed to the repo)
+sudo apt install -y python3-venv                  # if venv is not available yet
+python3 -m venv venv
+source venv/bin/activate                          # run this again in every new terminal
+
+# install the dependencies
+pip install --upgrade pip
+pip install mujoco mink "qpsolvers[daqp]" numpy pandas matplotlib tabulate imageio opencv-python
 ```
-Tested with MuJoCo 3.x, Python 3.12. On a headless machine set `MUJOCO_GL=egl` (or `osmesa`) for videos/snapshots.
 
-## 2. Run (from the `Lab3/` folder)
-
-Replace `heal` by `franka` in any path to run the Panda.
+Check the installation – it should print a MuJoCo 3.x version and a solver list containing `daqp`:
 ```bash
-# 25-episode batch per method, identical seeds (episode i uses seed+i)
-python scripts/heal/ik_mink/run_mink_pick_place.py --episodes 25 --seed 0
-python scripts/heal/ik_dls/run_dls_pick_place.py   --episodes 25 --seed 0
-python scripts/heal/ik_qp/run_qp_pick_place.py     --episodes 25 --seed 0
+python -c "import mujoco, mink, qpsolvers; print(mujoco.__version__, qpsolvers.available_solvers)"
+```
 
-# demo video: records Mink, DLS, QP (5 episodes ≈ 1 min each) and joins them
-#   -> videos/heal_all_methods.mp4   (needs: sudo apt install -y ffmpeg)
-bash scripts/record_videos.sh heal
-bash scripts/record_videos.sh franka
+| Problem | Fix |
+|---|---|
+| `ModuleNotFoundError: utils` | you are not inside the `Lab3/` folder |
+| `No module named mujoco` / `mink` | activate the environment: `source venv/bin/activate` |
+| viewer window fails (GLFW / GL error) | `sudo apt install -y libgl1 libegl1`; on Wayland try `XDG_SESSION_TYPE=x11 python ...` |
+| "offscreen rendering unavailable" warning (no display / SSH) | prefix the command with `MUJOCO_GL=egl` – the run still works, only failure screenshots are skipped |
+| macOS | use `mjpython` instead of `python` for any command with `--viewer` |
 
-# watch live / record a single method
-python scripts/franka/ik_dls/run_dls_pick_place.py -n 5 --viewer --realtime
-python scripts/franka/ik_dls/run_dls_pick_place.py -n 5 --record --video-size 1280x720
+## 2. Verify the work
 
-# failure study: spawn over the whole table, incl. corners outside the reliable workspace
-python scripts/franka/ik_qp/run_qp_pick_place.py -n 40 --seed 100 --profile stress
+The steps below go from a quick look to fully reproducing the reported numbers. Every run script has the same options:
 
-# ablation: switch OFF the cube-tray collision avoidance
-python scripts/franka/ik_mink/run_mink_pick_place.py -n 25 --seed 0 --naive-tray
+| Option | Meaning |
+|---|---|
+| `-n N` / `--episodes N` | number of episodes (default 25) |
+| `--seed S` | base seed – episode *i* uses seed *S+i*, so all methods get identical cube poses |
+| `--viewer` | open the MuJoCo viewer and watch the robot (add `--realtime` to play at real speed) |
+| `--profile stress` | spawn the cube anywhere on the table, including spots outside the reliable workspace |
+| `--naive-tray` | **switch off** the smart cube–tray collision avoidance (ablation) |
+| `--out DIR` | where to write the logs (default `logs/`) |
 
-# tables + plots for every robot / run group in logs/  (or --robot heal|franka)
-python scripts/analysis/compare_ik_methods.py
+The terminal prints one line per episode (`OK` or `FAIL <reason>@<phase>`) and a summary at the end
+(success rate, failure breakdown, planning/IK time, IK iterations, minimum clearance, limit violations).
 
-# inspect a scene in the MuJoCo viewer / dump it to XML
+> **Tip:** to keep the reported logs in `logs/` untouched, add `--out review_logs` to your runs
+> (used in all commands below).
+
+### 2.1 Look at the scenes (no motion)
+```bash
 python -m utils.pick_place.scene --robot franka --view
-python -m utils.pick_place.scene --robot franka --save
+python -m utils.pick_place.scene --robot heal --view
 ```
-Overnight: raise `--episodes`; `episodes.jsonl` is appended after each episode, so nothing is lost if the run stops.
-Run timing comparisons one after another (not in parallel) so CPU contention does not distort them.
+Robot, table, tray and red cube should appear. Close the window to continue.
+
+### 2.2 Watch each IK solver on each manipulator
+Three episodes each, with the viewer open. Each episode: approach → grasp → lift → carry → place in tray → retreat.
+```bash
+# Franka Emika Panda
+python scripts/franka/ik_mink/run_mink_pick_place.py -n 3 --viewer --realtime --out review_logs
+python scripts/franka/ik_dls/run_dls_pick_place.py   -n 3 --viewer --realtime --out review_logs
+python scripts/franka/ik_qp/run_qp_pick_place.py     -n 3 --viewer --realtime --out review_logs
+
+# HEAL
+python scripts/heal/ik_mink/run_mink_pick_place.py -n 3 --viewer --realtime --out review_logs
+python scripts/heal/ik_dls/run_dls_pick_place.py   -n 3 --viewer --realtime --out review_logs
+python scripts/heal/ik_qp/run_qp_pick_place.py     -n 3 --viewer --realtime --out review_logs
+```
+Expected: `OK` for every episode.
+
+### 2.3 Reproduce the main results (25 episodes per solver, no viewer)
+Run one after another (not in parallel) so the timings are comparable; each run takes about 1–2 minutes.
+```bash
+for robot in franka heal; do
+  for m in mink dls qp; do
+    python scripts/$robot/ik_$m/run_${m}_pick_place.py -n 25 --seed 0 --out review_logs
+  done
+done
+```
+Expected: **25/25 for every solver and robot**; timings differ slightly from machine to machine.
+
+### 2.4 Switch off the smart cube–tray collision avoidance
+Same seeds, but the cube is carried diagonally straight into the tray and not aligned with the walls:
+```bash
+python scripts/franka/ik_dls/run_dls_pick_place.py -n 25 --seed 0 --naive-tray --out review_logs
+python scripts/heal/ik_dls/run_dls_pick_place.py   -n 25 --seed 0 --naive-tray --out review_logs
+# watch it fail:
+python scripts/heal/ik_dls/run_dls_pick_place.py -n 3 --seed 0 --naive-tray --viewer --realtime --out review_logs
+```
+Expected: **0/25**, almost all `collision_cube_tray` (the cube hits a tray wall) – compared with 25/25 in 2.3.
+Any solver (`ik_mink`, `ik_dls`, `ik_qp`) can be used.
+
+### 2.5 Failure study (whole table)
+```bash
+python scripts/franka/ik_qp/run_qp_pick_place.py -n 40 --seed 100 --profile stress --out review_logs
+python scripts/heal/ik_qp/run_qp_pick_place.py   -n 40 --seed 100 --profile stress --out review_logs
+```
+Expected: Franka 29/40, HEAL 37/40 (failures: `ik_infeasible`, `collision_table`, `collision_tray`), identical for
+every solver. A screenshot of each failure is saved in `review_logs/<robot>/<run>/failures/`.
+
+### 2.6 Inspect the logs and regenerate tables and plots
+Each run creates `review_logs/<robot>/<method>_<profile>[_naive]_<time>/` with
+`episodes.csv` (one row per episode), `summary.json`, `config.json` and `failures/*.png`.
+```bash
+python scripts/analysis/compare_ik_methods.py --logs review_logs --out review_results
+cat review_results/robot_comparison.md
+```
+Tables and plots appear in `review_results/<robot>/` (success, timing, clearance, spawn maps, avoidance ablation).
+
+### 2.7 Workspace analysis
+```bash
+python scripts/analysis/workspace_analysis.py --robot franka      # ~2 min each
+python scripts/analysis/workspace_analysis.py --robot heal
+```
+Writes `results/<robot>/workspace/task_workspace.png` and `dexterous_workspace.png` (table, tray and spawn region drawn in).
+
+### 2.8 Change the setup
+All robot-specific numbers (table size and height, tray position, spawn ranges, gains, tolerances) are in
+`utils/pick_place/robots/franka.py` and `utils/pick_place/robots/heal.py` (`CONFIG` dictionary).
 
 ## 3. Repository layout
 
