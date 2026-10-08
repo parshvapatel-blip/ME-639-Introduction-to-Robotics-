@@ -1,0 +1,32 @@
+{
+  "episodes": 40,
+  "successes": 29,
+  "success_rate": 0.725,
+  "failure_breakdown": {
+    "collision_table": 5,
+    "ik_infeasible": 1,
+    "collision_tray": 5
+  },
+  "mean_plan_time_ms": 8.653604724975139,
+  "mean_ik_time_per_call_ms": 0.15560153633300683,
+  "mean_ik_time_per_episode_s": 0.0617198657746485,
+  "mean_ik_iters_per_call": 0.7535209148249997,
+  "mean_plan_ik_iters": 84.925,
+  "max_ik_iters": 20,
+  "min_clearance_cube_tray_m": 0.00768174945264982,
+  "mean_min_clearance_cube_tray_m": 0.06553346244140322,
+  "min_clearance_gripper_table_m": 0.0009250804000204419,
+  "min_clearance_gripper_tray_m": 0.0013475417675453,
+  "mean_max_track_err_mm": 9.240147037792147,
+  "ik_joint_limit_violations": 0,
+  "ik_velocity_violations": 0,
+  "sim_joint_limit_violation_steps": 0,
+  "sim_joint_vel_violation_steps": 232,
+  "mean_episode_sim_time_s": 10.863150000000772,
+  "robot": "franka",
+  "method": "mink",
+  "profile": "stress",
+  "smart_tray": true,
+  "total_wall_time_s": 17.152006596999854,
+  "run_dir": "/home/parshva/ITR/Lab3/logs/franka/mink_stress_20261007_203421"
+}

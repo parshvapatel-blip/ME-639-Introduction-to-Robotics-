@@ -1,0 +1,31 @@
+{
+  "episodes": 25,
+  "successes": 0,
+  "success_rate": 0.0,
+  "failure_breakdown": {
+    "collision_cube_tray": 22,
+    "collision_tray": 3
+  },
+  "mean_plan_time_ms": 4.446252360030485,
+  "mean_ik_time_per_call_ms": 0.10262033143108602,
+  "mean_ik_time_per_episode_s": 0.03179791527934867,
+  "mean_ik_iters_per_call": 0.7941827111670757,
+  "mean_plan_ik_iters": 60.64,
+  "max_ik_iters": 1,
+  "min_clearance_cube_tray_m": 0.00027098008886881686,
+  "mean_min_clearance_cube_tray_m": 0.0027258879851556742,
+  "min_clearance_gripper_table_m": 0.0021083863475715864,
+  "min_clearance_gripper_tray_m": 0.0033939489562635435,
+  "mean_max_track_err_mm": 8.269505881423383,
+  "ik_joint_limit_violations": 0,
+  "ik_velocity_violations": 0,
+  "sim_joint_limit_violation_steps": 0,
+  "sim_joint_vel_violation_steps": 0,
+  "mean_episode_sim_time_s": 8.14119999999954,
+  "robot": "franka",
+  "method": "qp",
+  "profile": "nominal",
+  "smart_tray": false,
+  "total_wall_time_s": 7.810201492000033,
+  "run_dir": "/home/parshva/ITR/Lab3/logs/franka/qp_nominal_naive_20261007_203614"
+}

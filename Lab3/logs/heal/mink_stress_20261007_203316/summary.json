@@ -1,0 +1,31 @@
+{
+  "episodes": 40,
+  "successes": 37,
+  "success_rate": 0.925,
+  "failure_breakdown": {
+    "ik_infeasible": 1,
+    "collision_tray": 2
+  },
+  "mean_plan_time_ms": 10.895931849984208,
+  "mean_ik_time_per_call_ms": 0.15719962073115715,
+  "mean_ik_time_per_episode_s": 0.06176660149942563,
+  "mean_ik_iters_per_call": 0.7544086670979758,
+  "mean_plan_ik_iters": 107.925,
+  "max_ik_iters": 1,
+  "min_clearance_cube_tray_m": 0.011581723749605978,
+  "mean_min_clearance_cube_tray_m": 0.04206237085705769,
+  "min_clearance_gripper_table_m": 0.0025197022568658745,
+  "min_clearance_gripper_tray_m": 0.002484841825308559,
+  "mean_max_track_err_mm": 1.7501945010109092,
+  "ik_joint_limit_violations": 0,
+  "ik_velocity_violations": 0,
+  "sim_joint_limit_violation_steps": 0,
+  "sim_joint_vel_violation_steps": 0,
+  "mean_episode_sim_time_s": 11.502150000000693,
+  "robot": "heal",
+  "method": "mink",
+  "profile": "stress",
+  "smart_tray": true,
+  "total_wall_time_s": 21.652746274000037,
+  "run_dir": "/home/parshva/ITR/Lab3/logs/heal/mink_stress_20261007_203316"
+}
