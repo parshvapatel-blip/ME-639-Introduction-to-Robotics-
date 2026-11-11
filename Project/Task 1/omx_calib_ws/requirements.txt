@@ -1,0 +1,6 @@
+# pip packages for peg_detection on Ubuntu 24.04 + ROS 2 Jazzy (Python 3.12).
+# NumPy comes from apt (python3-numpy 1.26, what ROS Jazzy is built against) - do NOT pip-upgrade it.
+# Install with --no-deps so pip cannot pull NumPy 2 in:
+#   python3 -m pip install --user --break-system-packages --no-deps -r requirements.txt
+# 4.10 = newest OpenCV wheel that works with NumPy 1.26; >= 4.7 for cv2.aruco.ArucoDetector.
+opencv-python-headless==4.10.0.84
