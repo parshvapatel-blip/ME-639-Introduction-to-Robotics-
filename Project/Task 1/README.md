@@ -2,6 +2,8 @@
 
 **Task attempted: Task 1, Peg Sorting.**
 
+**Demonstration video:** <https://youtu.be/QQekagnERYU>
+
 The ROBOTIS OpenMANIPULATOR-X picks four coloured pegs from the table and inserts each one into
 its matching socket. An Intel RealSense D435i camera finds the pegs and sockets, the positions are
 converted into the robot's base frame, and an inverse-kinematics planner moves the arm.
@@ -233,7 +235,7 @@ peg to turn it on the table is possible with this arm, but it is unreliable.
 
 ### 3.2 Collision with the neighbouring peg
 
-The demo video shows a collision **while the arm turns after a peg has been placed**. The gripper is
+The [demo video](https://youtu.be/QQekagnERYU) shows a collision **while the arm turns after a peg has been placed**. The gripper is
 still open, and an open gripper is wider than the gap between neighbouring sockets: the holes are
 about 7.5 cm apart, and a peg standing in a neighbouring socket sticks up 10 cm. When the base turns
 toward the next target or home, the open fingers sweep sideways at peg height and hit the
