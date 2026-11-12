@@ -178,6 +178,41 @@ points along the line from the base to the gripper. The gripper's yaw is therefo
 At a given socket, the gripper's yaw is fully determined by where the socket is, and it cannot be
 set independently. With 4 DOF and 5 constraints, one constraint has to give, and it is the yaw.
 
+```
+  SIDE VIEW: why there is no yaw control          TOP VIEW: yaw is fixed by the socket's position
+
+          wrist (pitch)                                     socket (fixed by the board)
+            ○═══╗                                          ┌───────────┐
+           ╱    ║ gripper                                  │           │
+  elbow   ╱     ║ (fingers close                           │     +     │
+ (pitch) ○      ║  sideways, out                           │           │
+          ╲        of the page)                            └─────╱─────┘
+           ╲                                                    ╱
+            ○ shoulder (pitch)                                 ╱  arm line, angle φ = atan2(y, x)
+            │                                                 ╱   = gripper yaw (no choice)
+       ═════◉═════ base (yaw): the ONLY joint                ◉ base
+                   that turns about the vertical
+
+  Shoulder, elbow and wrist all rotate in the same vertical plane, so they set
+  x, z and pitch. Only the base sets the direction of that plane, and that
+  direction must point at the target. Nothing is left to turn the gripper.
+```
+
+What the peg looks like when it arrives over its socket (rotation exaggerated):
+
+```
+                        ╱╲
+                 ┌─────╱──╲─────┐
+                 │    ╱    ╲    │        ─── square socket: orientation θ (fixed by the board)
+                 │   ╱      ╲   │
+                 │  ╱   +    ╲  │        ╱╲  square peg: orientation φ + k·90°
+                 │  ╲        ╱  │            (set by the gripper = by the socket's position)
+                 │   ╲      ╱   │
+                 │    ╲    ╱    │        Misalignment Δ = θ − φ  (mod 90° for a square)
+                 └─────╲──╱─────┘        Corners hit the rim unless Δ ≈ 0.
+                        ╲╱               On our board: Δ ≈ 5–10°.
+```
+
 What happens in practice:
 - When the parallel fingers close on a square or hexagonal peg, they **squeeze it straight**, so its
   faces lie flat against the fingers whatever its starting angle. This makes the grip repeatable, but
@@ -203,6 +238,24 @@ still open, and an open gripper is wider than the gap between neighbouring socke
 about 7.5 cm apart, and a peg standing in a neighbouring socket sticks up 10 cm. When the base turns
 toward the next target or home, the open fingers sweep sideways at peg height and hit the
 neighbouring peg.
+
+```
+  SIDE VIEW along the socket row, just after release (before the base turns)
+
+                                 ┃            ┃   open fingers, only 4 cm above the
+                                 ┃            ┃   release height
+     ┌─────┐                     ┃   ┌────┐   ┃
+     │     │  ◄═══ base turns ═══┃   │    │   ┃
+     │peg  │      fingers sweep  ┃   │peg │   ┃
+     │in   │      sideways       ┃   │just│   ┃
+     │next │      at this height     │put │
+     │hole │                         │in  │
+  ═══╧═════╧═════════════════════════╧════╧═══════ board
+        ◄──────── ≈ 7.5 cm (hole to hole) ────────►
+
+  open-finger span + clearance  >  free gap to the neighbouring peg   →  collision
+  lowest fingertip (≈ 8 cm high) < neighbouring peg top (10 cm)       →  they meet it
+```
 
 Causes:
 - The socket spacing is smaller than the open gripper's width plus clearance.
