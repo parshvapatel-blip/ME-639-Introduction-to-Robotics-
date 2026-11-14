@@ -2,7 +2,7 @@
 
 **Task attempted: Task 1, Peg Sorting.**
 
-**Demonstration video:** <https://youtu.be/QQekagnERYU>
+**Demonstration video:** <https://www.youtube.com/watch?v=kG0yGeU7EjA>
 
 The ROBOTIS OpenMANIPULATOR-X picks four coloured pegs from the table and inserts each one into
 its matching socket. An Intel RealSense D435i camera finds the pegs and sockets, the positions are
