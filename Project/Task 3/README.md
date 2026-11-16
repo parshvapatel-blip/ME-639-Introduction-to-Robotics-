@@ -8,6 +8,12 @@ The Heal cobot holds a ring in its Robotiq 85 gripper and has to pass the ring a
 
 Everything runs on ROS 2 Humble with Python 3.10. Path processing needs only numpy.
 
+## 🎥 Video demonstration
+
+**YouTube:** <PASTE_YOUTUBE_LINK_HERE>
+
+The video shows 3 autonomous trials, played at 6× speed: slowest (0.5×, 4:45), medium (0.8×, 2:42) and fastest (1.5×, 1:42).
+
 ---
 
 ## 1. Repository layout
