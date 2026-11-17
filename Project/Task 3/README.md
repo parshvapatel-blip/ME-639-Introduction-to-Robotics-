@@ -10,7 +10,7 @@ Everything runs on ROS 2 Humble with Python 3.10. Path processing needs only num
 
 ## 🎥 Video demonstration
 
-**YouTube:** <PASTE_YOUTUBE_LINK_HERE>
+**YouTube:** <https://www.youtube.com/watch?v=AvTJjvzQCAw>
 
 The video shows 3 autonomous trials, played at 6× speed: slowest (0.5×, 4:45), medium (0.8×, 2:42) and fastest (1.5×, 1:42).
 
